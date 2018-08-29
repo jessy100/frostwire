@@ -73,17 +73,6 @@ public final class BTEngine extends SessionManager {
 
     private static final Logger LOG = Logger.getLogger(BTEngine.class);
 
-    private static final int[] INNER_LISTENER_TYPES = new int[]{
-            ADD_TORRENT.swig(),
-            LISTEN_SUCCEEDED.swig(),
-            LISTEN_FAILED.swig(),
-            EXTERNAL_IP.swig(),
-            FASTRESUME_REJECTED.swig(),
-            TORRENT_LOG.swig(),
-            PEER_LOG.swig(),
-            AlertType.LOG.swig()
-    };
-
     private static final String TORRENT_ORIG_PATH_KEY = "torrent_orig_path";
     private static final String STATE_VERSION_KEY = "state_version";
     // this constant only changes when the libtorrent settings_pack ABI is
@@ -95,13 +84,11 @@ public final class BTEngine extends SessionManager {
     private final InnerListener innerListener;
     private final Queue<RestoreDownloadTask> restoreDownloadsQueue;
 
-    private BTEngineListener listener;
     private BTSettingsManager BTSettingsManager = new BTSettingsManager(STATE_VERSION_KEY, STATE_VERSION_VALUE);
-
 
     private BTEngine() {
         super(false);
-        this.innerListener = new InnerListener();
+        this.innerListener = new InnerListener(this);
         this.restoreDownloadsQueue = new LinkedList<>();
     }
 
@@ -117,11 +104,11 @@ public final class BTEngine extends SessionManager {
     }
 
     public BTEngineListener getListener() {
-        return listener;
+        return innerListener.getListener();
     }
 
     public void setListener(BTEngineListener listener) {
-        this.listener = listener;
+        innerListener.setListener(listener);
     }
 
     @Override
@@ -145,19 +132,9 @@ public final class BTEngine extends SessionManager {
     }
 
     @Override
-    protected void onAfterStart() {
-        fireStarted();
-    }
-
-    @Override
     protected void onBeforeStop() {
         removeListener(innerListener);
         BTSettingsManager.saveSettings();
-    }
-
-    @Override
-    protected void onAfterStop() {
-        fireStopped();
     }
 
     @Override
@@ -169,8 +146,6 @@ public final class BTEngine extends SessionManager {
         ctx.dataDir = dataDir; // this will be removed when we start using platform
         super.moveStorage(dataDir);
     }
-
-
 
     @Override
     protected void onApplySettings(SettingsPack sp) {
@@ -188,8 +163,6 @@ public final class BTEngine extends SessionManager {
         e.set(STATE_VERSION_KEY, STATE_VERSION_VALUE);
         return Vectors.byte_vector2bytes(e.bencode());
     }
-
-
 
     public void download(File torrent, File saveDir, boolean[] selection) {
         if (swig() == null) {
@@ -440,61 +413,13 @@ public final class BTEngine extends SessionManager {
         return escapeFilename(name);
     }
 
-    private void fireStarted() {
-        if (listener != null) {
-            listener.started(this);
-        }
-    }
 
-    private void fireStopped() {
-        if (listener != null) {
-            listener.stopped(this);
-        }
-    }
 
-    private void fireDownloadAdded(TorrentAlert<?> alert) {
-        try {
-            TorrentHandle th = find(alert.handle().infoHash());
-            if (th != null) {
-                BTDownload dl = new BTDownload(this, th);
-                if (listener != null) {
-                    listener.downloadAdded(this, dl);
-                }
-            } else {
-                LOG.info("torrent was not successfully added");
-            }
-        } catch (Throwable e) {
-            LOG.error("Unable to create and/or notify the new download", e);
-        }
-    }
 
-    private void fireDownloadUpdate(TorrentHandle th) {
-        try {
-            BTDownload dl = new BTDownload(this, th);
-            if (listener != null) {
-                listener.downloadUpdate(this, dl);
-            }
-        } catch (Throwable e) {
-            LOG.error("Unable to notify update the a download", e);
-        }
-    }
 
-    private void onListenSucceeded(ListenSucceededAlert alert) {
-        try {
-            String endp = alert.address() + ":" + alert.port();
-            String s = "endpoint: " + endp + " type:" + alert.socketType();
-            LOG.info("Listen succeeded on " + s);
-        } catch (Throwable e) {
-            LOG.error("Error adding listen endpoint to internal list", e);
-        }
-    }
 
-    private void onListenFailed(ListenFailedAlert alert) {
-        String endp = alert.address() + ":" + alert.port();
-        String s = "endpoint: " + endp + " type:" + alert.socketType();
-        String message = alert.error().message();
-        LOG.info("Listen failed on " + s + " (error: " + message + ")");
-    }
+
+
 
     private void migrateVuzeDownloads() {
         try {
@@ -570,7 +495,7 @@ public final class BTEngine extends SessionManager {
         return result;
     }
 
-    private void runNextRestoreDownloadTask() {
+    public void runNextRestoreDownloadTask() {
         RestoreDownloadTask task = null;
         try {
             if (!restoreDownloadsQueue.isEmpty()) {
@@ -596,13 +521,13 @@ public final class BTEngine extends SessionManager {
                 }
 
                 th.prioritizeFiles(priorities);
-                fireDownloadUpdate(th);
+                innerListener.fireDownloadUpdate(th);
                 th.resume();
             } else {
                 // did they just add the entire torrent (therefore not selecting any priorities)
                 final Priority[] wholeTorrentPriorities = Priority.array(Priority.NORMAL, ti.numFiles());
                 th.prioritizeFiles(wholeTorrentPriorities);
-                fireDownloadUpdate(th);
+                innerListener.fireDownloadUpdate(th);
                 th.resume();
             }
         } else { // new download
@@ -617,67 +542,6 @@ public final class BTEngine extends SessionManager {
         return s.replaceAll("[\\\\/:*?\"<>|\\[\\]]+", "_");
     }
 
-    private final class InnerListener implements AlertListener {
-        @Override
-        public int[] types() {
-            return INNER_LISTENER_TYPES;
-        }
-
-        @Override
-        public void alert(Alert<?> alert) {
-
-            AlertType type = alert.type();
-
-            switch (type) {
-                case ADD_TORRENT:
-                    TorrentAlert<?> torrentAlert = (TorrentAlert<?>) alert;
-                    fireDownloadAdded(torrentAlert);
-                    runNextRestoreDownloadTask();
-                    break;
-                case LISTEN_SUCCEEDED:
-                    onListenSucceeded((ListenSucceededAlert) alert);
-                    break;
-                case LISTEN_FAILED:
-                    onListenFailed((ListenFailedAlert) alert);
-                    break;
-                case EXTERNAL_IP:
-                    onExternalIpAlert((ExternalIpAlert) alert);
-                    break;
-                case FASTRESUME_REJECTED:
-                    onFastresumeRejected((FastresumeRejectedAlert) alert);
-                    break;
-                case TORRENT_LOG:
-                case PEER_LOG:
-                case LOG:
-                    printAlert(alert);
-                    break;
-            }
-        }
-    }
-
-    private void onExternalIpAlert(ExternalIpAlert alert) {
-        try {
-            // libtorrent perform all kind of tests
-            // to avoid non usable addresses
-            String address = alert.externalAddress().toString();
-            LOG.info("External IP: " + address);
-        } catch (Throwable e) {
-            LOG.error("Error saving reported external ip", e);
-        }
-    }
-
-    private void onFastresumeRejected(FastresumeRejectedAlert alert) {
-        try {
-            LOG.warn("Failed to load fastresume data, path: " + alert.filePath() +
-                    ", operation: " + alert.operation() + ", error: " + alert.error().message());
-        } catch (Throwable e) {
-            LOG.error("Error logging fastresume rejected alert", e);
-        }
-    }
-
-    private void printAlert(Alert alert) {
-        System.out.println("Log: " + alert);
-    }
 
     private final class RestoreDownloadTask implements Runnable {
 
