@@ -85,9 +85,10 @@ public final class InnerListener extends SessionManager implements AlertListener
 
     public void fireDownloadAdded(TorrentAlert<?> alert) {
         try {
-            TorrentHandle th = find(alert.handle().infoHash());
-            if (th != null) {
-                BTDownload dl = new BTDownload(BTEngineInstance, th);
+            TorrentHandle torrentHandler = alert.handle();
+            TorrentHandle  torrentHandlerInfoHash = find(torrentHandler.infoHash());
+            if (torrentHandlerInfoHash != null) {
+                BTDownload dl = new BTDownload(BTEngineInstance, torrentHandlerInfoHash);
                 if (listener != null) {
                     listener.downloadAdded(BTEngineInstance, dl);
                 }
