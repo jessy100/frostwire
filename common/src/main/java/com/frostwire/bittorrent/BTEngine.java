@@ -507,24 +507,7 @@ public final class BTEngine extends SessionManager {
 
                 for (Entry d : downloads) {
                     try {
-                        Map<String, Entry> map = d.dictionary();
-                        File saveDir = new File(map.get("save_dir").string());
-                        File torrent = new File(map.get("torrent").string());
-                        List<Entry> filePriorities = map.get("file_priorities").list();
-
-                        Priority[] priorities = Priority.array(Priority.IGNORE, filePriorities.size());
-                        for (int i = 0; i < filePriorities.size(); i++) {
-                            long p = filePriorities.get(i).integer();
-                            if (p != 0) {
-                                priorities[i] = Priority.NORMAL;
-                            }
-                        }
-
-                        if (torrent.exists() && saveDir.exists()) {
-                            LOG.info("Restored old vuze download: " + torrent);
-                            restoreDownloadsQueue.add(new RestoreDownloadTask(torrent, saveDir, priorities, null));
-                            saveResumeTorrent(new TorrentInfo(torrent));
-                        }
+                        ParseVuzeDownload(d);
                     } catch (Throwable e) {
                         LOG.error("Error restoring vuze torrent download", e);
                     }
@@ -534,6 +517,28 @@ public final class BTEngine extends SessionManager {
             }
         } catch (Throwable e) {
             LOG.error("Error migrating old vuze downloads", e);
+        }
+    }
+
+    private void ParseVuzeDownload(Entry d)
+    {
+        Map<String, Entry> map = d.dictionary();
+        File saveDir = new File(map.get("save_dir").string());
+        File torrent = new File(map.get("torrent").string());
+        List<Entry> filePriorities = map.get("file_priorities").list();
+
+        Priority[] priorities = Priority.array(Priority.IGNORE, filePriorities.size());
+        for (int i = 0; i < filePriorities.size(); i++) {
+            long p = filePriorities.get(i).integer();
+            if (p != 0) {
+                priorities[i] = Priority.NORMAL;
+            }
+        }
+
+        if (torrent.exists() && saveDir.exists()) {
+            LOG.info("Restored old vuze download: " + torrent);
+            restoreDownloadsQueue.add(new RestoreDownloadTask(torrent, saveDir, priorities, null));
+            saveResumeTorrent(new TorrentInfo(torrent));
         }
     }
 
@@ -604,6 +609,8 @@ public final class BTEngine extends SessionManager {
             download(ti, saveDir, resumeFile, priorities, peers);
         }
     }
+
+
 
     // this is here until we have a properly done OS utils.
     private static String escapeFilename(String s) {
@@ -707,6 +714,8 @@ public final class BTEngine extends SessionManager {
 
         return sb.toString();
     }
+
+
 
 
 }
