@@ -28,8 +28,6 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
