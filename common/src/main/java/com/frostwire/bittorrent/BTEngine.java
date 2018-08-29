@@ -45,14 +45,14 @@ public final class BTEngine extends SessionManager {
     // incompatible with the previous version, it should only happen from
     // time to time, not in every version
     private static final String STATE_VERSION_VALUE = "1.2.0.6";
-    public static BTContext ctx;
+    public static final BTContext ctx = new BTContext();
 
 
     private final InnerListener innerListener;
     private final Queue<RestoreDownloadTask> restoreDownloadsQueue;
 
-    private BTSettingsManager BTSettingsManager = new BTSettingsManager(STATE_VERSION_KEY, STATE_VERSION_VALUE);
-    private BTFileHandler FileHandler = new BTFileHandler();
+    private BTSettingsManager btSettingsManager = new BTSettingsManager(STATE_VERSION_KEY, STATE_VERSION_VALUE);
+    private BTFileHandler fileHandler = new BTFileHandler();
 
     private BTEngine() {
         super(false);
@@ -81,7 +81,7 @@ public final class BTEngine extends SessionManager {
 
     @Override
     public void start() {
-        SessionParams params = BTSettingsManager.loadSettings();
+        SessionParams params = btSettingsManager.loadSettings();
 
         settings_pack sp = params.settings().swig();
         sp.set_str(settings_pack.string_types.listen_interfaces.swigValue(), ctx.interfaces);
@@ -102,7 +102,7 @@ public final class BTEngine extends SessionManager {
     @Override
     protected void onBeforeStop() {
         removeListener(innerListener);
-        BTSettingsManager.saveSettings();
+        btSettingsManager.saveSettings();
     }
 
     @Override
@@ -117,7 +117,7 @@ public final class BTEngine extends SessionManager {
 
     @Override
     protected void onApplySettings(SettingsPack sp) {
-        BTSettingsManager.saveSettings();
+        btSettingsManager.saveSettings();
     }
 
     @Override
@@ -137,7 +137,7 @@ public final class BTEngine extends SessionManager {
             return;
         }
 
-        saveDir = FileHandler.setupSaveDir(saveDir);
+        saveDir = fileHandler.setupSaveDir(saveDir);
         if (saveDir == null) {
             return;
         }
@@ -166,7 +166,7 @@ public final class BTEngine extends SessionManager {
         download(ti, saveDir, priorities, null, null);
 
         if (!exists) {
-            FileHandler.saveResumeTorrent(ti);
+            fileHandler.saveResumeTorrent(ti);
         }
     }
 
@@ -179,7 +179,7 @@ public final class BTEngine extends SessionManager {
             return;
         }
 
-        saveDir = FileHandler.setupSaveDir(saveDir);
+        saveDir = fileHandler.setupSaveDir(saveDir);
         if (saveDir == null) {
             return;
         }
@@ -208,9 +208,9 @@ public final class BTEngine extends SessionManager {
         download(ti, saveDir, priorities, null, peers);
 
         if (!torrentHandleExists) {
-            FileHandler.saveResumeTorrent(ti);
+            fileHandler.saveResumeTorrent(ti);
             if (!dontSaveTorrentFile) {
-                FileHandler.saveTorrent(ti);
+                fileHandler.saveTorrent(ti);
             }
         }
     }
@@ -224,7 +224,7 @@ public final class BTEngine extends SessionManager {
             return;
         }
 
-        saveDir = FileHandler.setupSaveDir(saveDir);
+        saveDir = fileHandler.setupSaveDir(saveDir);
         if (saveDir == null) {
             return;
         }
@@ -248,9 +248,9 @@ public final class BTEngine extends SessionManager {
         }
 
         if (!exists) {
-            FileHandler.saveResumeTorrent(ti);
+            fileHandler.saveResumeTorrent(ti);
             if (!dontSaveTorrentFile) {
-                FileHandler.saveTorrent(ti);
+                fileHandler.saveTorrent(ti);
             }
         }
     }
@@ -291,10 +291,10 @@ public final class BTEngine extends SessionManager {
     {
         String infoHash = FilenameUtils.getBaseName(t.getName());
         if (infoHash != null) {
-            File resumeFile = FileHandler.resumeDataFile(infoHash);
+            File resumeFile = fileHandler.resumeDataFile(infoHash);
 
-            File savePath = FileHandler.readSavePath(infoHash);
-            if (FileHandler.setupSaveDir(savePath) == null) {
+            File savePath = fileHandler.readSavePath(infoHash);
+            if (fileHandler.setupSaveDir(savePath) == null) {
                 LOG.warn("Can't create data dir or mount point is not accessible");
                 return;
             }
@@ -345,7 +345,7 @@ public final class BTEngine extends SessionManager {
         if (torrent.exists() && saveDir.exists()) {
             LOG.info("Restored old vuze download: " + torrent);
             restoreDownloadsQueue.add(new RestoreDownloadTask(torrent, saveDir, priorities, null));
-            FileHandler.saveResumeTorrent(new TorrentInfo(torrent));
+            fileHandler.saveResumeTorrent(new TorrentInfo(torrent));
         }
     }
 
