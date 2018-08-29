@@ -308,18 +308,7 @@ public final class BTEngine extends SessionManager {
         if (torrents != null) {
             for (File t : torrents) {
                 try {
-                    String infoHash = FilenameUtils.getBaseName(t.getName());
-                    if (infoHash != null) {
-                        File resumeFile = FileHandler.resumeDataFile(infoHash);
-
-                        File savePath = FileHandler.readSavePath(infoHash);
-                        if (setupSaveDir(savePath) == null) {
-                            LOG.warn("Can't create data dir or mount point is not accessible");
-                            return;
-                        }
-
-                        restoreDownloadsQueue.add(new RestoreDownloadTask(t, null, null, resumeFile));
-                    }
+                    CreateFileToResume(t);
                 } catch (Throwable e) {
                     LOG.error("Error restoring torrent download: " + t, e);
                 }
@@ -331,17 +320,21 @@ public final class BTEngine extends SessionManager {
         runNextRestoreDownloadTask();
     }
 
+    private void CreateFileToResume(File t)
+    {
+        String infoHash = FilenameUtils.getBaseName(t.getName());
+        if (infoHash != null) {
+            File resumeFile = FileHandler.resumeDataFile(infoHash);
 
+            File savePath = FileHandler.readSavePath(infoHash);
+            if (setupSaveDir(savePath) == null) {
+                LOG.warn("Can't create data dir or mount point is not accessible");
+                return;
+            }
 
-
-
-
-
-
-
-
-
-
+            restoreDownloadsQueue.add(new RestoreDownloadTask(t, null, null, resumeFile));
+        }
+    }
 
     private void migrateVuzeDownloads() {
         try {
