@@ -123,7 +123,7 @@ public final class BTEngine extends SessionManager {
     @Override
     public byte[] saveState() {
         if (swig() == null) {
-            return null;
+            return new byte[0];
         }
 
         entry e = new entry();
