@@ -99,6 +99,35 @@ public class BTFileHandler {
         return escapeFilename(name);
     }
 
+
+    public File setupSaveDir(File saveDir) {
+        File result = null;
+
+        if (saveDir == null) {
+            if (ctx.dataDir != null) {
+                result = ctx.dataDir;
+            } else {
+                LOG.warn("Unable to setup save dir path, review your logic, both saveDir and ctx.dataDir are null.");
+            }
+        } else {
+            result = saveDir;
+        }
+
+        FileSystem fs = Platforms.get().fileSystem();
+
+        if (result != null && !fs.isDirectory(result) && !fs.mkdirs(result)) {
+            result = null;
+            LOG.warn("Failed to create save dir to download");
+        }
+
+        if (result != null && !fs.canWrite(result)) {
+            result = null;
+            LOG.warn("Failed to setup save dir with write access");
+        }
+
+        return result;
+    }
+
     private static String escapeFilename(String s) {
         return s.replaceAll("[\\\\/:*?\"<>|\\[\\]]+", "_");
     }
