@@ -73,7 +73,6 @@ public final class BTEngine extends SessionManager {
 
     private static final Logger LOG = Logger.getLogger(BTEngine.class);
 
-    private static final String TORRENT_ORIG_PATH_KEY = "torrent_orig_path";
     private static final String STATE_VERSION_KEY = "state_version";
     // this constant only changes when the libtorrent settings_pack ABI is
     // incompatible with the previous version, it should only happen from
@@ -81,10 +80,12 @@ public final class BTEngine extends SessionManager {
     private static final String STATE_VERSION_VALUE = "1.2.0.6";
     public static BTContext ctx;
 
+
     private final InnerListener innerListener;
     private final Queue<RestoreDownloadTask> restoreDownloadsQueue;
 
     private BTSettingsManager BTSettingsManager = new BTSettingsManager(STATE_VERSION_KEY, STATE_VERSION_VALUE);
+    private BTFileHandler FileHandler = new BTFileHandler();
 
     private BTEngine() {
         super(false);
@@ -198,7 +199,7 @@ public final class BTEngine extends SessionManager {
         download(ti, saveDir, priorities, null, null);
 
         if (!exists) {
-            saveResumeTorrent(ti);
+            FileHandler.saveResumeTorrent(ti);
         }
     }
 
@@ -240,9 +241,9 @@ public final class BTEngine extends SessionManager {
         download(ti, saveDir, priorities, null, peers);
 
         if (!torrentHandleExists) {
-            saveResumeTorrent(ti);
+            FileHandler.saveResumeTorrent(ti);
             if (!dontSaveTorrentFile) {
-                saveTorrent(ti);
+                FileHandler.saveTorrent(ti);
             }
         }
     }
@@ -280,9 +281,9 @@ public final class BTEngine extends SessionManager {
         }
 
         if (!exists) {
-            saveResumeTorrent(ti);
+            FileHandler.saveResumeTorrent(ti);
             if (!dontSaveTorrentFile) {
-                saveTorrent(ti);
+                FileHandler.saveTorrent(ti);
             }
         }
     }
@@ -309,9 +310,9 @@ public final class BTEngine extends SessionManager {
                 try {
                     String infoHash = FilenameUtils.getBaseName(t.getName());
                     if (infoHash != null) {
-                        File resumeFile = resumeDataFile(infoHash);
+                        File resumeFile = FileHandler.resumeDataFile(infoHash);
 
-                        File savePath = readSavePath(infoHash);
+                        File savePath = FileHandler.readSavePath(infoHash);
                         if (setupSaveDir(savePath) == null) {
                             LOG.warn("Can't create data dir or mount point is not accessible");
                             return;
@@ -332,86 +333,7 @@ public final class BTEngine extends SessionManager {
 
 
 
-    File resumeTorrentFile(String infoHash) {
-        return new File(ctx.homeDir, infoHash + ".torrent");
-    }
 
-    File torrentFile(String name) {
-        return new File(ctx.torrentsDir, name + ".torrent");
-    }
-
-    File resumeDataFile(String infoHash) {
-        return new File(ctx.homeDir, infoHash + ".resume");
-    }
-
-    File readTorrentPath(String infoHash) {
-        File torrent = null;
-
-        try {
-            byte[] arr = FileUtils.readFileToByteArray(resumeTorrentFile(infoHash));
-            entry e = entry.bdecode(Vectors.bytes2byte_vector(arr));
-            torrent = new File(e.dict().get(TORRENT_ORIG_PATH_KEY).string());
-        } catch (Throwable e) {
-            // can't recover original torrent path
-        }
-
-        return torrent;
-    }
-
-    File readSavePath(String infoHash) {
-        File savePath = null;
-
-        try {
-            byte[] arr = FileUtils.readFileToByteArray(resumeDataFile(infoHash));
-            entry e = entry.bdecode(Vectors.bytes2byte_vector(arr));
-            savePath = new File(e.dict().get("save_path").string());
-        } catch (Throwable e) {
-            // can't recover original torrent path
-        }
-
-        return savePath;
-    }
-
-    private void saveTorrent(TorrentInfo ti) {
-        File torrentFile;
-
-        try {
-            String name = getEscapedFilename(ti);
-
-            torrentFile = torrentFile(name);
-            byte[] arr = ti.toEntry().bencode();
-
-            FileSystem fs = Platforms.get().fileSystem();
-            fs.write(torrentFile, arr);
-            fs.scan(torrentFile);
-        } catch (Throwable e) {
-            LOG.warn("Error saving torrent info to file", e);
-        }
-
-    }
-
-    private void saveResumeTorrent(TorrentInfo ti) {
-
-        try {
-            String name = getEscapedFilename(ti);
-
-            entry e = ti.toEntry().swig();
-            e.dict().set(TORRENT_ORIG_PATH_KEY, new entry(torrentFile(name).getAbsolutePath()));
-            byte[] arr = Vectors.byte_vector2bytes(e.bencode());
-
-            FileUtils.writeByteArrayToFile(resumeTorrentFile(ti.infoHash().toString()), arr);
-        } catch (Throwable e) {
-            LOG.warn("Error saving resume torrent", e);
-        }
-    }
-
-    private String getEscapedFilename(TorrentInfo ti) {
-        String name = ti.name();
-        if (name == null || name.length() == 0) {
-            name = ti.infoHash().toString();
-        }
-        return escapeFilename(name);
-    }
 
 
 
@@ -463,7 +385,7 @@ public final class BTEngine extends SessionManager {
         if (torrent.exists() && saveDir.exists()) {
             LOG.info("Restored old vuze download: " + torrent);
             restoreDownloadsQueue.add(new RestoreDownloadTask(torrent, saveDir, priorities, null));
-            saveResumeTorrent(new TorrentInfo(torrent));
+            FileHandler.saveResumeTorrent(new TorrentInfo(torrent));
         }
     }
 
@@ -534,14 +456,6 @@ public final class BTEngine extends SessionManager {
             download(ti, saveDir, resumeFile, priorities, peers);
         }
     }
-
-
-
-    // this is here until we have a properly done OS utils.
-    private static String escapeFilename(String s) {
-        return s.replaceAll("[\\\\/:*?\"<>|\\[\\]]+", "_");
-    }
-
 
     private final class RestoreDownloadTask implements Runnable {
 

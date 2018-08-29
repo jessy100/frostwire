@@ -72,6 +72,8 @@ public final class BTDownload implements BittorrentDownload {
     private final PaymentOptions paymentOptions;
 
     private final InnerListener innerListener;
+    private BTFileHandler FileHandler = new BTFileHandler();
+
 
     public BTDownload(BTEngine engine, TorrentHandle th) {
         this.engine = engine;
@@ -383,14 +385,14 @@ public final class BTDownload implements BittorrentDownload {
         }
 
         if (deleteTorrent) {
-            File torrent = engine.readTorrentPath(infoHash);
+            File torrent = FileHandler.readTorrentPath(infoHash);
             if (torrent != null) {
                 Platforms.get().fileSystem().delete(torrent);
             }
         }
 
-        engine.resumeDataFile(infoHash).delete();
-        engine.resumeTorrentFile(infoHash).delete();
+        FileHandler.resumeDataFile(infoHash).delete();
+        FileHandler.resumeTorrentFile(infoHash).delete();
     }
 
     public BTDownloadListener getListener() {
@@ -538,7 +540,7 @@ public final class BTDownload implements BittorrentDownload {
     }
 
     public File getTorrentFile() {
-        return engine.readTorrentPath(this.getInfoHash());
+        return FileHandler.readTorrentPath(this.getInfoHash());
     }
 
     public Set<File> getIncompleteFiles() {
@@ -604,7 +606,7 @@ public final class BTDownload implements BittorrentDownload {
         try {
             if (th.isValid()) {
                 String infoHash = th.infoHash().toString();
-                File file = engine.resumeDataFile(infoHash);
+                File file = FileHandler.resumeDataFile(infoHash);
                 entry e = add_torrent_params.write_resume_data(alert.swig().getParams());
                 e.dict().set(EXTRA_DATA_KEY, Entry.fromMap(extra).swig());
                 FileUtils.writeByteArrayToFile(file, Vectors.byte_vector2bytes(e.bencode()));
@@ -635,7 +637,7 @@ public final class BTDownload implements BittorrentDownload {
         Map<String, String> map = new HashMap<>();
         try {
             String infoHash = getInfoHash();
-            File file = engine.resumeDataFile(infoHash);
+            File file = FileHandler.resumeDataFile(infoHash);
             if (file.exists()) {
                 byte[] arr = FileUtils.readFileToByteArray(file);
                 entry e = entry.bdecode(Vectors.bytes2byte_vector(arr));
