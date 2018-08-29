@@ -8,7 +8,7 @@ import com.frostwire.util.Logger;
 
 import static com.frostwire.jlibtorrent.alerts.AlertType.*;
 
-public final class InnerListener extends SessionManager implements AlertListener  {
+public final class InnerListener extends SessionManager implements AlertListener {
 
     private static final Logger LOG = Logger.getLogger(InnerListener.class);
 
@@ -27,29 +27,24 @@ public final class InnerListener extends SessionManager implements AlertListener
     };
 
     @Override
-    public int[] types()
-    {
+    public int[] types() {
         return INNER_LISTENER_TYPES;
     }
 
-    public InnerListener(BTEngine btEngine)
-    {
+    public InnerListener(BTEngine btEngine) {
         this.BTEngineInstance = btEngine;
     }
 
-    public BTEngineListener getListener()
-    {
+    public BTEngineListener getListener() {
         return listener;
     }
 
-    public void setListener(BTEngineListener listener)
-    {
+    public void setListener(BTEngineListener listener) {
         this.listener = listener;
     }
 
     @Override
-    public void alert(Alert<?> alert)
-    {
+    public void alert(Alert<?> alert) {
         AlertType type = alert.type();
 
         switch (type) {
@@ -86,7 +81,7 @@ public final class InnerListener extends SessionManager implements AlertListener
     public void fireDownloadAdded(TorrentAlert<?> alert) {
         try {
             TorrentHandle torrentHandler = alert.handle();
-            TorrentHandle  torrentHandlerInfoHash = find(torrentHandler.infoHash());
+            TorrentHandle torrentHandlerInfoHash = find(torrentHandler.infoHash());
             if (torrentHandlerInfoHash != null) {
                 BTDownload dl = new BTDownload(BTEngineInstance, torrentHandlerInfoHash);
                 if (listener != null) {

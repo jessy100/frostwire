@@ -17,7 +17,6 @@ public class BTFileHandler {
     private static final Logger LOG = Logger.getLogger(BTFileHandler.class);
 
 
-
     File resumeTorrentFile(String infoHash) {
         return new File(ctx.homeDir, infoHash + ".torrent");
     }

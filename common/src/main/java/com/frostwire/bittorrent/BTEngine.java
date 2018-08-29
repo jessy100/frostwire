@@ -191,7 +191,7 @@ public final class BTEngine extends SessionManager {
         boolean torrentHandleExists = th != null;
 
         if (selection != null) {
-            priorities = ParsePriorities(th,ti,selection);
+            priorities = ParsePriorities(th, ti, selection);
         }
 
         download(ti, saveDir, priorities, null, peers);
@@ -244,8 +244,7 @@ public final class BTEngine extends SessionManager {
         }
     }
 
-    public Priority[] ParsePriorities(TorrentHandle torrentHandle, TorrentInfo torrentInfo, boolean[] selection)
-    {
+    public Priority[] ParsePriorities(TorrentHandle torrentHandle, TorrentInfo torrentInfo, boolean[] selection) {
         Priority[] priorities;
 
         if (torrentHandle != null) {
@@ -297,8 +296,7 @@ public final class BTEngine extends SessionManager {
         runNextRestoreDownloadTask();
     }
 
-    private void createFileToResume(File t)
-    {
+    private void createFileToResume(File t) {
         String infoHash = FilenameUtils.getBaseName(t.getName());
         if (infoHash != null) {
             File resumeFile = fileHandler.resumeDataFile(infoHash);
@@ -321,8 +319,7 @@ public final class BTEngine extends SessionManager {
         }
     }
 
-    private void parseVuzeDownload(Entry d)
-    {
+    private void parseVuzeDownload(Entry d) {
         Map<String, Entry> map = d.dictionary();
         File saveDir = new File(map.get("save_dir").string());
         File torrent = new File(map.get("torrent").string());
@@ -440,8 +437,6 @@ public final class BTEngine extends SessionManager {
 
         return sb.toString();
     }
-
-
 
 
 }

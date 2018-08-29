@@ -15,11 +15,10 @@ public class BTSettingsManager extends SessionManager {
 
     private static final Logger LOG = Logger.getLogger(BTSettingsManager.class);
     private String STATE_VERSION_KEY;
-    private String STATE_VERSION_VALUE ;
+    private String STATE_VERSION_VALUE;
     public static BTContext ctx;
 
-    public BTSettingsManager(String versionKey, String versionValue)
-    {
+    public BTSettingsManager(String versionKey, String versionValue) {
         this.STATE_VERSION_KEY = versionKey;
         this.STATE_VERSION_VALUE = versionValue;
     }
