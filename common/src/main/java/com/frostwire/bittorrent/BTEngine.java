@@ -69,9 +69,6 @@ public final class BTEngine extends SessionManager {
     }
 
     public static BTEngine getInstance() {
-        if (ctx == null) {
-            throw new IllegalStateException("Context can't be null");
-        }
         return Loader.INSTANCE;
     }
 
@@ -316,7 +313,7 @@ public final class BTEngine extends SessionManager {
 
     private void migrateVuzeDownloads() {
         try {
-            ConvertFuzeFile();
+            convertFuzeFile();
         } catch (Exception e) {
             LOG.error("Error migrating old vuze downloads", e);
         }
@@ -344,7 +341,7 @@ public final class BTEngine extends SessionManager {
     }
 
 
-    private void ConvertFuzeFile() throws IOException {
+    private void convertFuzeFile() throws IOException {
         File dir = new File(ctx.homeDir.getParent(), "azureus");
         File file = new File(dir, "downloads.config");
 
@@ -360,11 +357,11 @@ public final class BTEngine extends SessionManager {
                 }
             }
 
-            FileCleanUp(file.toPath());
+            fileCleanUp(file.toPath());
         }
     }
 
-    private void FileCleanUp(Path path) throws NoSuchFileException, DirectoryNotEmptyException, IOException{
+    private void fileCleanUp(Path path) throws IOException{
         java.nio.file.Files.delete(path);
     }
 
