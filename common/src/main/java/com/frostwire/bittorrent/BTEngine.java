@@ -27,6 +27,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -314,23 +315,7 @@ public final class BTEngine extends SessionManager {
 
     private void migrateVuzeDownloads() {
         try {
-            File dir = new File(ctx.homeDir.getParent(), "azureus");
-            File file = new File(dir, "downloads.config");
-
-            if (file.exists()) {
-                Entry configEntry = Entry.bdecode(file);
-                List<Entry> downloads = configEntry.dictionary().get("downloads").list();
-
-                for (Entry d : downloads) {
-                    try {
-                        parseVuzeDownload(d);
-                    } catch (Exception e) {
-                        LOG.error("Error restoring vuze torrent download", e);
-                    }
-                }
-
-                file.delete();
-            }
+            ConvertFuzeFile();
         } catch (Exception e) {
             LOG.error("Error migrating old vuze downloads", e);
         }
@@ -355,6 +340,27 @@ public final class BTEngine extends SessionManager {
             LOG.info("Restored old vuze download: " + torrent);
             restoreDownloadsQueue.add(new RestoreDownloadTask(torrent, saveDir, priorities, null));
             fileHandler.saveResumeTorrent(new TorrentInfo(torrent));
+        }
+    }
+
+
+    private void ConvertFuzeFile() throws IOException {
+        File dir = new File(ctx.homeDir.getParent(), "azureus");
+        File file = new File(dir, "downloads.config");
+
+        if (file.exists()) {
+            Entry configEntry = Entry.bdecode(file);
+            List<Entry> downloads = configEntry.dictionary().get("downloads").list();
+
+            for (Entry d : downloads) {
+                try {
+                    parseVuzeDownload(d);
+                } catch (Exception e) {
+                    LOG.error("Error restoring vuze torrent download", e);
+                }
+            }
+
+            file.delete();
         }
     }
 
