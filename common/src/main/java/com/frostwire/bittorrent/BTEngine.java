@@ -284,7 +284,7 @@ public final class BTEngine extends SessionManager {
         if (torrents != null) {
             for (File t : torrents) {
                 try {
-                    CreateFileToResume(t);
+                    createFileToResume(t);
                 } catch (Exception e) {
                     LOG.error("Error restoring torrent download: " + t, e);
                 }
@@ -296,7 +296,7 @@ public final class BTEngine extends SessionManager {
         runNextRestoreDownloadTask();
     }
 
-    private void CreateFileToResume(File t)
+    private void createFileToResume(File t)
     {
         String infoHash = FilenameUtils.getBaseName(t.getName());
         if (infoHash != null) {
@@ -323,7 +323,7 @@ public final class BTEngine extends SessionManager {
 
                 for (Entry d : downloads) {
                     try {
-                        ParseVuzeDownload(d);
+                        parseVuzeDownload(d);
                     } catch (Exception e) {
                         LOG.error("Error restoring vuze torrent download", e);
                     }
@@ -336,7 +336,7 @@ public final class BTEngine extends SessionManager {
         }
     }
 
-    private void ParseVuzeDownload(Entry d)
+    private void parseVuzeDownload(Entry d)
     {
         Map<String, Entry> map = d.dictionary();
         File saveDir = new File(map.get("save_dir").string());
