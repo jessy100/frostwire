@@ -190,19 +190,7 @@ public final class BTEngine extends SessionManager {
         boolean torrentHandleExists = th != null;
 
         if (selection != null) {
-            if (torrentHandleExists) {
-                priorities = th.filePriorities();
-            } else {
-                priorities = Priority.array(Priority.IGNORE, ti.numFiles());
-            }
-
-            if (priorities != null) {
-                for (int i = 0; i < selection.length; i++) {
-                    if (selection[i] && i < priorities.length) {
-                        priorities[i] = Priority.NORMAL;
-                    }
-                }
-            }
+            priorities = ParsePriorities(th,ti,selection);
         }
 
         download(ti, saveDir, priorities, null, peers);
@@ -253,6 +241,27 @@ public final class BTEngine extends SessionManager {
                 fileHandler.saveTorrent(ti);
             }
         }
+    }
+
+    public Priority[] ParsePriorities(TorrentHandle torrentHandle, TorrentInfo torrentInfo, boolean[] selection)
+    {
+        Priority[] priorities;
+
+        if (torrentHandle != null) {
+            priorities = torrentHandle.filePriorities();
+        } else {
+            priorities = Priority.array(Priority.IGNORE, torrentInfo.numFiles());
+        }
+
+        if (priorities != null) {
+            for (int i = 0; i < selection.length; i++) {
+                if (selection[i] && i < priorities.length) {
+                    priorities[i] = Priority.NORMAL;
+                }
+            }
+        }
+
+        return priorities;
     }
 
     public void restoreDownloads() {
