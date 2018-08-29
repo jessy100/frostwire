@@ -285,7 +285,7 @@ public final class BTEngine extends SessionManager {
             for (File t : torrents) {
                 try {
                     CreateFileToResume(t);
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     LOG.error("Error restoring torrent download: " + t, e);
                 }
             }
@@ -324,14 +324,14 @@ public final class BTEngine extends SessionManager {
                 for (Entry d : downloads) {
                     try {
                         ParseVuzeDownload(d);
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         LOG.error("Error restoring vuze torrent download", e);
                     }
                 }
 
                 file.delete();
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             LOG.error("Error migrating old vuze downloads", e);
         }
     }
@@ -365,7 +365,7 @@ public final class BTEngine extends SessionManager {
             if (!restoreDownloadsQueue.isEmpty()) {
                 task = restoreDownloadsQueue.poll();
             }
-        } catch (Throwable t) {
+        } catch (Exception e) {
             // on Android, LinkedList's .poll() implementation throws a NoSuchElementException
         }
         if (task != null) {
@@ -417,7 +417,7 @@ public final class BTEngine extends SessionManager {
         public void run() {
             try {
                 download(new TorrentInfo(torrent), saveDir, resume, priorities, null);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 LOG.error("Unable to restore download from previous session. (" + torrent.getAbsolutePath() + ")", e);
             }
         }
