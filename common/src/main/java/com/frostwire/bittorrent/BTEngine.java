@@ -28,6 +28,9 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -357,8 +360,12 @@ public final class BTEngine extends SessionManager {
                 }
             }
 
-            file.delete();
+            FileCleanUp(file.toPath());
         }
+    }
+
+    private void FileCleanUp(Path path) throws NoSuchFileException, DirectoryNotEmptyException, IOException{
+        java.nio.file.Files.delete(path);
     }
 
 
