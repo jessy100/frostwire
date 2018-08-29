@@ -9,6 +9,7 @@ import com.frostwire.util.Logger;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 
 public class BTSettingsManager extends SessionManager {
 
@@ -27,29 +28,11 @@ public class BTSettingsManager extends SessionManager {
         try {
             File f = settingsFile();
             if (f.exists()) {
-                byte[] data = FileUtils.readFileToByteArray(f);
-                byte_vector buffer = Vectors.bytes2byte_vector(data);
-                bdecode_node n = new bdecode_node();
-                error_code ec = new error_code();
-                int ret = bdecode_node.bdecode(buffer, n, ec);
-
-                if (ret == 0) {
-                    String stateVersion = n.dict_find_string_value_s(STATE_VERSION_KEY);
-                    if (!STATE_VERSION_VALUE.equals(stateVersion)) {
-                        return defaultParams();
-                    }
-
-                    session_params params = libtorrent.read_session_params(n);
-                    buffer.clear(); // prevents GC
-                    return new SessionParams(params);
-                } else {
-                    LOG.error("Can't decode session state data: " + ec.message());
-                    return defaultParams();
-                }
+                return GetSettingsFromFile(f);
             } else {
                 return defaultParams();
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             LOG.error("Error loading session state", e);
             return defaultParams();
         }
@@ -63,7 +46,7 @@ public class BTSettingsManager extends SessionManager {
         try {
             byte[] data = saveState();
             FileUtils.writeByteArrayToFile(settingsFile(), data);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             LOG.error("Error saving session state", e);
         }
     }
@@ -113,5 +96,27 @@ public class BTSettingsManager extends SessionManager {
 
         SettingsPack sp = defaultSettings();
         applySettings(sp);
+    }
+
+    private SessionParams GetSettingsFromFile(File f) throws IOException {
+        byte[] data = FileUtils.readFileToByteArray(f);
+        byte_vector buffer = Vectors.bytes2byte_vector(data);
+        bdecode_node n = new bdecode_node();
+        error_code ec = new error_code();
+        int ret = bdecode_node.bdecode(buffer, n, ec);
+
+        if (ret == 0) {
+            String stateVersion = n.dict_find_string_value_s(STATE_VERSION_KEY);
+            if (!STATE_VERSION_VALUE.equals(stateVersion)) {
+                return defaultParams();
+            }
+
+            session_params params = libtorrent.read_session_params(n);
+            buffer.clear(); // prevents GC
+            return new SessionParams(params);
+        } else {
+            LOG.error("Can't decode session state data: " + ec.message());
+            return defaultParams();
+        }
     }
 }
